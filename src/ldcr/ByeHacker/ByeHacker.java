@@ -36,7 +36,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 
 public class ByeHacker extends JavaPlugin implements Listener {
     private final ArrayList<String> whileList = new ArrayList<String>(Arrays.asList(new String[]{"/login","/register","/l","/reg"}));
-    private final char[] obfKey = "il1I".toCharArray();
     private final String authPrefix = ".say .§fAntiHackedClient_";
     private final String hackPrefix = ".§fAntiHackedClient_";
     private final int authLength = 64 - authPrefix.length();
@@ -79,7 +78,7 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	clickAuth.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§a点击完成认证").create()));
 	player.spigot().sendMessage(clickAuth);
     }
-
+    private final char[] obfKey = "il1I".toCharArray();
     private String generateAuthKey() {
 	final StringBuilder builder = new StringBuilder();
 	builder.append(authPrefix);
@@ -206,10 +205,10 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	    if (isHacker) {
 		player.kickPlayer("Internal Exception: io.netty.handler.codec.DecoderException: java.lang.RuntimeException: An internal error occured.");
 		Bukkit.getBanList(Type.IP).addBan(player.getAddress().getHostString(),
-			"ByeHacker-Detected"
+			"ByeHacker-Detected-"+player.getName()+" ["+player.getAddress().getHostString()+"]"
 			, null, "ByeHacker-AutoDetect");
 		Bukkit.getBanList(Type.NAME).addBan(player.getName(),
-			"ByeHacker-Detected"
+			"ByeHacker-Detected-"+player.getName()+" ["+player.getAddress().getHostString()+"]"
 			, null, "ByeHacker-AutoDetect");
 	    } else {
 		player.sendMessage("§b§l作弊验证 §7>> §a数据包发送完毕, 确认您的游戏没有崩溃. ");

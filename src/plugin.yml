@@ -6,3 +6,5 @@ depend: ["ProtocolLib"]
 permissions:
     byehacker.bypass:
         default: op
+commands:
+  byehacker:
