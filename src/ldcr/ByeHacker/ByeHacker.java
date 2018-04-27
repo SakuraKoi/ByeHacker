@@ -1,11 +1,21 @@
 package ldcr.ByeHacker;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Random;
+import java.util.HashSet;
+import java.util.LinkedList;
 
+import org.bukkit.BanList.Type;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,13 +32,11 @@ import org.bukkit.util.Vector;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import ldcr.ByeHacker.Utils.JarScanner;
+import ldcr.ByeHacker.layers.BuiltinLayer;
 
 public class ByeHacker extends JavaPlugin implements Listener {
+    public static ByeHacker instance;
     protected final ArrayList<String> whileList = new ArrayList<String>(Arrays.asList(new String[]{
 	    "/login",
 	    "/register",
@@ -36,77 +44,157 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	    "/reg"
     }));
 
-    protected final String authPrefix = ".say .§fAntiHackedClient_";
-    protected final String hackPrefix = ".§fAntiHackedClient_";
-
-    private final int authLength = 64 - authPrefix.length();
-    private final Random random = new Random();
     private ProtocolManager protocolManager;
-
-    protected HashMap<Player, String> layer1Auth;
-    protected HashMap<Player, Boolean> layer2Auth;
+    private LinkedList<IByeHackerLayer> layers;
+    private HashMap<Player,WaitingAuthPlayerLayers> waitingAuth;
     @Override
     public void onEnable() {
-	//dotwaitingAuth = new ArrayList<Player>();
-	layer1Auth = new HashMap<Player, String>();
-	layer2Auth = new HashMap<Player, Boolean>();
+	instance = this;
+	loadLayers(Bukkit.getConsoleSender());
+	waitingAuth = new HashMap<Player,WaitingAuthPlayerLayers>();
 	getCommand("byehacker").setExecutor(new ByeHackerCommand());
 	Bukkit.getPluginManager().registerEvents(this, this);
 	protocolManager = ProtocolLibrary.getProtocolManager();
-	protocolManager.addPacketListener(new ChatListener(this));
+	protocolManager.addPacketListener(new ChatListener());
+    }
+    public void loadLayers(final CommandSender callback) {
+	loadLayersInternal(callback);
+	callback.sendMessage("§b§l作弊验证 §7>> §a验证层加载完毕! 共载入了 "+layers.size()+" 种验证模式");
+    }
+    private void loadLayersInternal(final CommandSender callback) {
+	callback.sendMessage("§b§l作弊验证 §7>> §e正在加载验证层...");
+	layers = new LinkedList<IByeHackerLayer>();
+	getDataFolder().mkdirs();
+	final File[] layerFiles = getDataFolder().listFiles(new FilenameFilter(){
+	    @Override
+	    public boolean accept(final File arg0, final String arg1) {
+		if (arg1.endsWith(".jar")) {
+		    callback.sendMessage("§b§l作弊验证 §7>> §a找到外置验证包 "+arg1);
+		    return true;
+		} else return false;
+	    }
+	});
+	if (layerFiles.length==0) {
+	    callback.sendMessage("§b§l作弊验证 §7>> §c没有找到外置验证层文件, 加载内建基础验证层...");
+	    layers.add(new BuiltinLayer());
+	    callback.sendMessage("§b§l作弊验证 §7>> §a成功加载验证层 §d"+BuiltinLayer.class.getName());
+	    return;
+	}
+
+	for (final File layerFile : layerFiles) {
+	    final URLClassLoader loader;
+	    try {
+		loader = URLClassLoader.newInstance(new URL[]{ layerFile.toURI().toURL()}, getClassLoader());
+	    } catch (final MalformedURLException e) {
+		callback.sendMessage("§b§l作弊验证 §7>> §c外置验证包 "+layerFile.getName()+" 无效: MalformedURL");
+		continue;
+	    }
+	    ArrayList<String> clses;
+	    try {
+		clses = JarScanner.getCrunchifyClassNamesFromJar(layerFile);
+	    } catch (final IOException e) {
+		callback.sendMessage("§b§l作弊验证 §7>> §c外置验证包 "+layerFile.getName()+" 加载失败: IOException");
+		continue;
+	    }
+	    for (final String clsName : clses) {
+		if (!clsName.startsWith("ldcr.ByeHacker.layers.")) {
+		    continue;
+		}
+		if (clsName.contains("$")) {
+		    continue;
+		}
+		final Class<?> cls;
+		try {
+		    cls = loader.loadClass(clsName);
+		} catch (final ClassNotFoundException e) {
+		    callback.sendMessage("§b§l作弊验证 §7>> §c外置验证层 §d"+clsName+" §c加载失败: ClassNotFound");
+		    continue;
+		}
+		if (IByeHackerLayer.class.isAssignableFrom(cls)) {
+		    final Class<? extends IByeHackerLayer> layerCls = cls.asSubclass(IByeHackerLayer.class);
+		    try {
+			final IByeHackerLayer layer = layerCls.getConstructor().newInstance();
+			layers.add(layer);
+			callback.sendMessage("§b§l作弊验证 §7>> §a成功加载验证层 §d"+clsName);
+		    } catch (final Exception e) {
+			callback.sendMessage("§b§l作弊验证 §7>> §c外置验证层 §d"+clsName+" §c加载失败: "+e.getClass().getSimpleName());
+			continue;
+		    }
+		} else {
+		    continue;
+		}
+	    }
+	}
+
+    }
+    private LinkedList<IByeHackerLayer> getLayers() {
+	final LinkedList<IByeHackerLayer> layers = new LinkedList<IByeHackerLayer>(this.layers);
+	Collections.shuffle(layers);
+	return layers;
     }
     @Override
     public void onDisable() {
-	for (final Player p : layer1Auth.keySet()) {
+	onReload();
+    }
+    public void onReload() {
+	for (final Player p : waitingAuth.keySet()) {
 	    p.kickPlayer("§b§l作弊验证 §7>> §c服务器重载, 请重新登录游戏!");
 	}
-	for (final Player p : layer2Auth.keySet()) {
-	    p.kickPlayer("§b§l作弊验证 §7>> §c服务器重载, 请重新登录游戏!");
+    }
+    public boolean isWaitingAuth(final Player player) {
+	return waitingAuth.containsKey(player);
+    }
+    public void passAuth(final Player player) {
+	if (hackers.contains(player)) {
+	    Bukkit.getScheduler().runTask(this, new DetectedKickThread(player));
+	    return;
 	}
+	waitingAuth.remove(player);
+	player.sendMessage("§b§l作弊验证 §7>> §a验证已通过, 您可以继续游戏了~");
     }
-
-    boolean isWaitingAuth(final Player player) {
-	if (layer1Auth.containsKey(player)) return true;
-	if (layer2Auth.containsKey(player)) return true;
-	return false;
+    private final HashSet<Player> hackers = new HashSet<Player>();
+    public void markHack(final Player player, final String layer) {
+	hackers.add(player);
+	onDetectedBan(player, layer);
     }
-
-    void sendAuthMessage(final Player player) {
-	final String authKey = layer1Auth.get(player);
-	if (authKey==null) return;
-	final TextComponent clickAuth = new TextComponent("§b§l作弊验证 §7>> §a请打开聊天用鼠标点击此处完成认证 §6(先登录再认证)");
-	clickAuth.setColor(ChatColor.YELLOW);
-	clickAuth.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, authKey));
-	clickAuth.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§a点击完成认证").create()));
-	player.spigot().sendMessage(clickAuth);
-    }
-    private final char[] obfKey = "il1I".toCharArray();
-    private String generateAuthKey() {
-	final StringBuilder builder = new StringBuilder();
-	builder.append(authPrefix);
-	for (int i = 0; i<authLength; i++) {
-	    builder.append(obfKey[random.nextInt(obfKey.length)]);
+    public void passLayer(final Player player) {
+	if (hackers.contains(player)) {
+	    if (Math.random()>0.5) {
+		Bukkit.getScheduler().runTask(this, new DetectedKickThread(player));
+		return;
+	    }
 	}
-	return builder.toString();
+	player.sendMessage("§b§l作弊验证 §7>> §a您已通过本层反作弊验证!");
+	waitingAuth.get(player).passLayer();
+    }
+    public void onDetected(final Player player, final String layer) {
+	onDetectedBan(player,layer);
+	Bukkit.getScheduler().runTask(this, new DetectedKickThread(player));
+    }
+    public void onDetectedBan(final Player player, final String layer) {
+	Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c玩家 "+player.getName()+" 被检测到作弊客户端");
+	Bukkit.getBanList(Type.IP).addBan(player.getAddress().getHostString(),
+		"ByeHacker-Detected? "+
+			player.getAddress().getHostString()+" "+layer
+			, null, "ByeHacker-AutoDetect");
+	Bukkit.getBanList(Type.NAME).addBan(player.getName(),
+		"ByeHacker-Detected? "+
+			player.getAddress().getHostString()+" "+layer
+			, null, "ByeHacker-AutoDetect");
     }
 
     @EventHandler
     public void onJoin(final PlayerLoginEvent event) {
 	if (event.getPlayer().hasPermission("byehacker.bypass")) return;
-	Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-	    @Override
-	    public void run() {
-		sendAuthMessage(event.getPlayer());
-	    }
-	}, 10);
-	layer1Auth.put(event.getPlayer(), generateAuthKey());
+	final WaitingAuthPlayerLayers layer = new WaitingAuthPlayerLayers(event.getPlayer(), getLayers());
+	waitingAuth.put(event.getPlayer(), layer);
     }
     private final Vector downVector = new Vector(0,0,0);
     @EventHandler
     public void onMove(final PlayerMoveEvent event) {
 	if (isWaitingAuth(event.getPlayer())) {
 	    event.setTo(event.getFrom().getBlock().getLocation().add(0.5, 0, 0.5).setDirection(downVector));
-	    sendAuthMessage(event.getPlayer());
+	    waitingAuth.get(event.getPlayer()).nextLayer().onDenyAction(event.getPlayer());
 	}
     }
 
@@ -134,8 +222,11 @@ public class ByeHacker extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(final PlayerQuitEvent event) {
 	if (isWaitingAuth(event.getPlayer())) {
-	    layer1Auth.remove(event.getPlayer());
-	    layer2Auth.remove(event.getPlayer());
+	    waitingAuth.get(event.getPlayer()).nextLayer().endAuth(event.getPlayer());
+	    waitingAuth.remove(event.getPlayer());
+	}
+	if(hackers.contains(event.getPlayer())) {
+	    hackers.remove(event.getPlayer());
 	}
     }
 
@@ -147,5 +238,17 @@ public class ByeHacker extends JavaPlugin implements Listener {
 		Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c被封禁的玩家 "+e.getPlayer().getName()+" 试图进入服务器");
 	    }
 	}
+    }
+    public boolean callNonAuthPlayerChat(final Player player, final String message) {
+	boolean shouldCancel = false;
+	for (final IByeHackerLayer layer : layers) {
+	    if (layer.onNonAuthPlayerChat(player, message)) {
+		shouldCancel = true;
+	    }
+	}
+	return shouldCancel;
+    }
+    public boolean callAuthPlayerChat(final Player player, final String message) {
+	return waitingAuth.get(player).onChat(player, message);
     }
 }

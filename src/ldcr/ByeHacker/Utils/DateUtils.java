@@ -1,4 +1,4 @@
-package ldcr.ByeHacker;
+package ldcr.ByeHacker.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

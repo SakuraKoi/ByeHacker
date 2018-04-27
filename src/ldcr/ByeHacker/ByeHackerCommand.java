@@ -8,9 +8,12 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
+import ldcr.ByeHacker.Utils.DateUtils;
+
 
 public class ByeHackerCommand implements CommandExecutor {
 
+    @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(final CommandSender sender, final Command arg1, final String arg2,
 	    final String[] args) {
@@ -38,11 +41,11 @@ public class ByeHackerCommand implements CommandExecutor {
 	    if (Bukkit.getBanList(Type.NAME).isBanned(player.getName())) {
 		final BanEntry banInfo = Bukkit.getBanList(Type.NAME).getBanEntry(player.getName());
 		if ("ByeHacker-AutoDetect".equals(banInfo.getSource())) {
-		    if (banInfo.getReason().startsWith("ByeHacker-Detected| ")) {
+		    if (banInfo.getReason().startsWith("ByeHacker-Detected? ")) {
 			final String[] infos = banInfo.getReason().split(" ");
 			sender.sendMessage(new String[] {
-				"§b§lByeHacker §7>> §e玩家 "+player.getName()+" 被检测于 "+DateUtils.formatDate(banInfo.getCreated()),
-				"§b§lByeHacker §7>> §e 所在IP: "+infos[1]
+				"§b§lByeHacker §7>> §a玩家 §e"+player.getName()+" §a被检测于 §e"+DateUtils.formatDate(banInfo.getCreated()),
+				"§b§lByeHacker §7>> §a 所在IP: §e"+infos[1]+" §a匹配规则: §e"+infos[2]
 			});
 		    } else {
 			sender.sendMessage("§b§lByeHacker §7>> §c玩家 "+player.getName()+" 被旧版ByeHacker检测封禁, 无法查询信息");
@@ -73,7 +76,7 @@ public class ByeHackerCommand implements CommandExecutor {
 	    if (Bukkit.getBanList(Type.NAME).isBanned(player.getName())) {
 		final BanEntry banInfo = Bukkit.getBanList(Type.NAME).getBanEntry(player.getName());
 		if ("ByeHacker-AutoDetect".equals(banInfo.getSource())) {
-		    if (banInfo.getReason().startsWith("ByeHacker-Detected| ")) {
+		    if (banInfo.getReason().startsWith("ByeHacker-Detected? ")) {
 			final String[] infos = banInfo.getReason().split(" ");
 			Bukkit.getBanList(Type.NAME).pardon(player.getName());
 			Bukkit.getBanList(Type.IP).pardon(infos[1]);
@@ -87,6 +90,15 @@ public class ByeHackerCommand implements CommandExecutor {
 	    } else {
 		sender.sendMessage("§b§lByeHacker §7>> §a玩家 "+player.getName()+" 没有被ByeHacker检测封禁");
 	    }
+	    return true;
+	}
+	case "reload": {
+	    if (!sender.hasPermission("byehacker.manage")) {
+		sender.sendMessage("§b§lByeHacker §7>> §c你没有权限执行此命令");
+		return true;
+	    }
+	    ByeHacker.instance.loadLayers(sender);
+	    ByeHacker.instance.onReload();
 	    return true;
 	}
 	default: {
