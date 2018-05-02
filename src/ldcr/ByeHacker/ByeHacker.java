@@ -34,6 +34,7 @@ import com.comphenix.protocol.ProtocolManager;
 
 import ldcr.ByeHacker.Utils.JarScanner;
 import ldcr.ByeHacker.layers.BuiltinLayer;
+import ldcr.ByeHacker.layers.LastCheckLayer;
 
 public class ByeHacker extends JavaPlugin implements Listener {
     public static ByeHacker instance;
@@ -47,12 +48,19 @@ public class ByeHacker extends JavaPlugin implements Listener {
     private ProtocolManager protocolManager;
     private LinkedList<IByeHackerLayer> layers;
     private HashMap<Player,WaitingAuthPlayerLayers> waitingAuth;
+    private boolean authmeSupport = false;
     @Override
     public void onEnable() {
 	instance = this;
 	loadLayers(Bukkit.getConsoleSender());
 	waitingAuth = new HashMap<Player,WaitingAuthPlayerLayers>();
 	getCommand("byehacker").setExecutor(new ByeHackerCommand());
+	if (Bukkit.getPluginManager().isPluginEnabled("AuthMe")) {
+	    Bukkit.getPluginManager().registerEvents(new AuthmeListener(), this);
+	    authmeSupport = true;
+	} else {
+	    authmeSupport = false;
+	}
 	Bukkit.getPluginManager().registerEvents(this, this);
 	protocolManager = ProtocolLibrary.getProtocolManager();
 	protocolManager.addPacketListener(new ChatListener());
@@ -127,9 +135,11 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	}
 
     }
+    private final LastCheckLayer lastCheckLayer = new LastCheckLayer();
     private LinkedList<IByeHackerLayer> getLayers() {
 	final LinkedList<IByeHackerLayer> layers = new LinkedList<IByeHackerLayer>(this.layers);
 	Collections.shuffle(layers);
+	layers.add(lastCheckLayer);
 	return layers;
     }
     @Override
@@ -157,6 +167,10 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	hackers.add(player);
 	onDetectedBan(player, layer);
     }
+    public void removeAuth(final Player player) {
+	waitingAuth.get(player).endAuthIfAvaliable();
+	waitingAuth.remove(player);
+    }
     public void passLayer(final Player player) {
 	if (hackers.contains(player)) {
 	    if (Math.random()>0.5) {
@@ -174,20 +188,24 @@ public class ByeHacker extends JavaPlugin implements Listener {
     public void onDetectedBan(final Player player, final String layer) {
 	Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c玩家 "+player.getName()+" 被检测到作弊客户端");
 	Bukkit.getBanList(Type.IP).addBan(player.getAddress().getHostString(),
-		"ByeHacker-Detected? "+
-			player.getAddress().getHostString()+" "+layer
+		"ByeHacker-Detected- "+
+			player.getAddress().getHostString()+" "+layer+" "+player.getName()
 			, null, "ByeHacker-AutoDetect");
 	Bukkit.getBanList(Type.NAME).addBan(player.getName(),
-		"ByeHacker-Detected? "+
-			player.getAddress().getHostString()+" "+layer
+		"ByeHacker-Detected- "+
+			player.getAddress().getHostString()+" "+layer+" "+player.getName()
 			, null, "ByeHacker-AutoDetect");
     }
 
     @EventHandler
     public void onJoin(final PlayerLoginEvent event) {
+	if (authmeSupport) return;
 	if (event.getPlayer().hasPermission("byehacker.bypass")) return;
-	final WaitingAuthPlayerLayers layer = new WaitingAuthPlayerLayers(event.getPlayer(), getLayers());
-	waitingAuth.put(event.getPlayer(), layer);
+	startCheck(event.getPlayer());
+    }
+    public void startCheck(final Player player) {
+	final WaitingAuthPlayerLayers layer = new WaitingAuthPlayerLayers(player, getLayers());
+	waitingAuth.put(player, layer);
     }
     private final Vector downVector = new Vector(0,0,0);
     @EventHandler
@@ -234,7 +252,7 @@ public class ByeHacker extends JavaPlugin implements Listener {
     public void onLogin(final PlayerLoginEvent e) {
 	if (e.getResult()==Result.KICK_BANNED) {
 	    if (e.getKickMessage().contains("ByeHacker-Detected")) {
-		e.setKickMessage(" java.net.ConnectException: Connection Refused: no further information: ");
+		e.setKickMessage(" java.net.ConnectException: Connection Refused: no further information; ");
 		Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c被封禁的玩家 "+e.getPlayer().getName()+" 试图进入服务器");
 	    }
 	}
@@ -249,6 +267,6 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	return shouldCancel;
     }
     public boolean callAuthPlayerChat(final Player player, final String message) {
-	return waitingAuth.get(player).onChat(player, message);
+	return waitingAuth.get(player).onChat(message);
     }
 }

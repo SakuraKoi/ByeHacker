@@ -9,6 +9,7 @@ public class DetectedKickThread implements Runnable {
     }
     @Override
     public void run() {
+	ByeHacker.instance.removeAuth(player);
 	player.kickPlayer("Internal Exception: io.netty.handler.codec.DecoderException: java.lang.RuntimeException: An internal error occured.");
     }
 

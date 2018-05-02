@@ -10,7 +10,7 @@ public class WaitingAuthPlayerLayers {
     public WaitingAuthPlayerLayers(final Player player, final LinkedList<IByeHackerLayer> layers) {
 	this.player = player;
 	this.layers = layers;
-	requestAuth(player);
+	requestAuth();
     }
     public Player getPlayer() {
 	return player;
@@ -30,16 +30,21 @@ public class WaitingAuthPlayerLayers {
 	    nextLayer().requestAuth(player);
 	}
     }
-    public void requestAuth(final Player player) {
+    public void requestAuth() {
 	nextLayer().requestAuth(player);
     }
-    public void endAuth(final Player player) {
+    public void endAuth() {
 	nextLayer().endAuth(player);
     }
-    public void onDenyAction(final Player player) {
+    public void onDenyAction() {
 	nextLayer().onDenyAction(player);
     }
-    public boolean onChat(final Player player, final String message) {
+    public boolean onChat(final String message) {
 	return nextLayer().onChat(player, message);
+    }
+    public void endAuthIfAvaliable() {
+	if (!layers.isEmpty()) {
+	    endAuth();
+	}
     }
 }
