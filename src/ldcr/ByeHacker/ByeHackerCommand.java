@@ -164,8 +164,10 @@ public class ByeHackerCommand implements CommandExecutor {
 		    return arg0.getCreated().compareTo(arg1.getCreated());
 		}
 	    });
+	    int count = 0;
 	    for (final BanEntry banInfo : sortedList) {
 		if ("ByeHacker-AutoDetect".equals(banInfo.getSource())) {
+		    count++;
 		    final ByeHackerReason reason = new ByeHackerReason(banInfo.getReason());
 		    sender.sendMessage(
 			    "§b§lByeHacker §7>> §a玩家 §e"+banInfo.getTarget()+
@@ -174,6 +176,7 @@ public class ByeHackerCommand implements CommandExecutor {
 			    " §a时间 §e"+DateUtils.formatDateWhitoutTime(banInfo.getCreated()));
 		}
 	    }
+	    sender.sendMessage("§b§lByeHacker §7>> §b已封禁 "+count+" 个作弊者及他们的IP");
 	    return true;
 	}
 	default: {

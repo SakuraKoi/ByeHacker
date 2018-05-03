@@ -1,11 +1,5 @@
 package ldcr.ByeHacker;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +26,7 @@ import org.bukkit.util.Vector;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 
-import ldcr.ByeHacker.Utils.JarScanner;
+import ldcr.ByeHacker.layers.AdvancedDotSayLayer;
 import ldcr.ByeHacker.layers.BuiltinLayer;
 import ldcr.ByeHacker.layers.LastCheckLayer;
 
@@ -72,68 +66,13 @@ public class ByeHacker extends JavaPlugin implements Listener {
     private void loadLayersInternal(final CommandSender callback) {
 	callback.sendMessage("§b§l作弊验证 §7>> §e正在加载验证层...");
 	layers = new LinkedList<IByeHackerLayer>();
-	getDataFolder().mkdirs();
-	final File[] layerFiles = getDataFolder().listFiles(new FilenameFilter(){
-	    @Override
-	    public boolean accept(final File arg0, final String arg1) {
-		if (arg1.endsWith(".jar")) {
-		    callback.sendMessage("§b§l作弊验证 §7>> §a找到外置验证包 "+arg1);
-		    return true;
-		} else return false;
-	    }
-	});
-	if (layerFiles.length==0) {
+	layers.add(new AdvancedDotSayLayer());
+	if (layers.isEmpty()) {
 	    callback.sendMessage("§b§l作弊验证 §7>> §c没有找到外置验证层文件, 加载内建基础验证层...");
 	    layers.add(new BuiltinLayer());
 	    callback.sendMessage("§b§l作弊验证 §7>> §a成功加载验证层 §d"+BuiltinLayer.class.getName());
 	    return;
 	}
-
-	for (final File layerFile : layerFiles) {
-	    final URLClassLoader loader;
-	    try {
-		loader = URLClassLoader.newInstance(new URL[]{ layerFile.toURI().toURL()}, getClassLoader());
-	    } catch (final MalformedURLException e) {
-		callback.sendMessage("§b§l作弊验证 §7>> §c外置验证包 "+layerFile.getName()+" 无效: MalformedURL");
-		continue;
-	    }
-	    ArrayList<String> clses;
-	    try {
-		clses = JarScanner.getCrunchifyClassNamesFromJar(layerFile);
-	    } catch (final IOException e) {
-		callback.sendMessage("§b§l作弊验证 §7>> §c外置验证包 "+layerFile.getName()+" 加载失败: IOException");
-		continue;
-	    }
-	    for (final String clsName : clses) {
-		if (!clsName.startsWith("ldcr.ByeHacker.layers.")) {
-		    continue;
-		}
-		if (clsName.contains("$")) {
-		    continue;
-		}
-		final Class<?> cls;
-		try {
-		    cls = loader.loadClass(clsName);
-		} catch (final ClassNotFoundException e) {
-		    callback.sendMessage("§b§l作弊验证 §7>> §c外置验证层 §d"+clsName+" §c加载失败: ClassNotFound");
-		    continue;
-		}
-		if (IByeHackerLayer.class.isAssignableFrom(cls)) {
-		    final Class<? extends IByeHackerLayer> layerCls = cls.asSubclass(IByeHackerLayer.class);
-		    try {
-			final IByeHackerLayer layer = layerCls.getConstructor().newInstance();
-			layers.add(layer);
-			callback.sendMessage("§b§l作弊验证 §7>> §a成功加载验证层 §d"+clsName);
-		    } catch (final Exception e) {
-			callback.sendMessage("§b§l作弊验证 §7>> §c外置验证层 §d"+clsName+" §c加载失败: "+e.getClass().getSimpleName());
-			continue;
-		    }
-		} else {
-		    continue;
-		}
-	    }
-	}
-
     }
     private final LastCheckLayer lastCheckLayer = new LastCheckLayer();
     private LinkedList<IByeHackerLayer> getLayers() {
