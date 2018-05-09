@@ -14,7 +14,7 @@ public class LastCheckLayer implements IByeHackerLayer {
 
     @Override
     public void requestAuth(final Player player) {
-	player.sendMessage("b§l作弊验证 §7>> §e正在检查您的客户端, 请稍候...");
+	player.sendMessage("§b§l作弊验证 §7>> §e正在检查您的客户端, 请稍候...");
 	Bukkit.getScheduler().runTaskLater(ByeHacker.instance, new Runnable() {
 	    @Override
 	    public void run() {

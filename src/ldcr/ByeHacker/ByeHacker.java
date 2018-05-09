@@ -26,6 +26,7 @@ import org.bukkit.util.Vector;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 
+import ldcr.ByeHacker.api.event.ByeHackerPassEvent;
 import ldcr.ByeHacker.layers.AdvancedDotSayLayer;
 import ldcr.ByeHacker.layers.BuiltinLayer;
 import ldcr.ByeHacker.layers.LastCheckLayer;
@@ -100,6 +101,7 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	}
 	waitingAuth.remove(player);
 	player.sendMessage("§b§l作弊验证 §7>> §a验证已通过, 您可以继续游戏了~");
+	Bukkit.getPluginManager().callEvent(new ByeHackerPassEvent(player));
     }
     private final HashSet<Player> hackers = new HashSet<Player>();
     public void markHack(final Player player, final String layer) {
@@ -139,7 +141,10 @@ public class ByeHacker extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(final PlayerLoginEvent event) {
 	if (authmeSupport) return;
-	if (event.getPlayer().hasPermission("byehacker.bypass")) return;
+	if (event.getPlayer().hasPermission("byehacker.bypass")) {
+	    Bukkit.getPluginManager().callEvent(new ByeHackerPassEvent(event.getPlayer()));
+	    return;
+	}
 	startCheck(event.getPlayer());
     }
     public void startCheck(final Player player) {
