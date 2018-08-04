@@ -1,9 +1,9 @@
 name: ByeHacker
 main: ldcr.ByeHacker.ByeHacker
-version: 2.0.0
+version: 4
 author: Ldcr
 softdepend: ["AuthMe"]
-depend: ["ProtocolLib"]
+depend: ["ProtocolLib", "LdcrUtils"]
 permissions:
     byehacker.bypass:
         default: op
