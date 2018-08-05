@@ -15,7 +15,7 @@ import ldcr.ByeHacker.ByeHacker;
 import ldcr.ByeHacker.Tasks.DetectedKickThread;
 import ldcr.ByeHacker.Tasks.TimeoutKickThread;
 import ldcr.ByeHacker.Utils.AuthKeyGenerator;
-import ldcr.ByeHacker.Utils.BookUtils;
+import ldcr.Utils.Bukkit.BookUtils;
 import ldcr.lib.com.google.common.base.Joiner;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -40,6 +40,7 @@ public class ByehackerAuth {
 	private TextComponent keypad;
 	private final ItemStack book;
 	private final BookMeta meta;
+	private final boolean small = false;
 	@Getter
 	private final TimeoutKickThread timeoutThread;
 
@@ -88,7 +89,7 @@ public class ByehackerAuth {
 		for (final ByehackerKey key : keys) {
 			captha.add(String.valueOf(key.getKey()));
 		}
-		prefix = new TextComponent(TextComponent.fromLegacyText("§c§lByeHacker 作弊验证 §7>> \n§2请输入验证码: §1§l§n"+Joiner.on("").join(captha)+"§t\n\n\n"));
+		prefix = new TextComponent(new TextComponent("§c§lByeHacker 作弊验证 §7>> "), new TextComponent("\n§2请输入验证码: §1§l§n"+Joiner.on("").join(captha)+"§t\n\n"));
 		//title = new TextComponent(new TextComponent("§b§l作弊验证 §7>> §a请打开聊天用鼠标从左到右依次点击: "), new TextComponent(question.getDisplay()));
 	}
 

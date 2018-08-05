@@ -23,9 +23,9 @@ public class ByeHackerCommand implements CommandExecutor {
 			final String[] args) {
 		if (args.length==0) {
 			sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.info") ? "a" : "c")+  "/byehacker info <player>    查询ByeHacker检测");
-			sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.info") ? "a" : "c")+  "/byehacker infoip <address> 查询ByeHacker检测");
+			//sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.info") ? "a" : "c")+  "/byehacker infoip <address> 查询ByeHacker检测");
 			sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.manage") ? "a" : "c")+"/byehacker unban <player>   解除ByeHacker封禁");
-			sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.manage") ? "a" : "c")+"/byehacker unbanip <player> 解除ByeHacker封禁");
+			//sender.sendMessage("§b§lByeHacker §7>> §"+(sender.hasPermission("byehacker.manage") ? "a" : "c")+"/byehacker unbanip <player> 解除ByeHacker封禁");
 			return true;
 		}
 		switch (args[0].toLowerCase()) {
@@ -60,7 +60,7 @@ public class ByeHackerCommand implements CommandExecutor {
 				sender.sendMessage("§b§lByeHacker §7>> §a玩家 "+player.getName()+" 没有被ByeHacker检测封禁");
 			}
 			return true;
-		}
+		}/*
 		case "infoip":{
 			if (!sender.hasPermission("byehacker.info")) {
 				sender.sendMessage("§b§lByeHacker §7>> §c你没有权限执行此命令");
@@ -87,7 +87,7 @@ public class ByeHackerCommand implements CommandExecutor {
 				sender.sendMessage("§b§lByeHacker §7>> §aIP "+ip+" 没有被ByeHacker检测封禁");
 			}
 			return true;
-		}
+		}*/
 		case "unban": {
 			if (!sender.hasPermission("byehacker.manage")) {
 				sender.sendMessage("§b§lByeHacker §7>> §c你没有权限执行此命令");
@@ -117,7 +117,7 @@ public class ByeHackerCommand implements CommandExecutor {
 				sender.sendMessage("§b§lByeHacker §7>> §a玩家 "+player.getName()+" 没有被封禁");
 			}
 			return true;
-		}
+		}/*
 		case "unbanip": {
 			if (!sender.hasPermission("byehacker.manage")) {
 				sender.sendMessage("§b§lByeHacker §7>> §c你没有权限执行此命令");
@@ -142,7 +142,7 @@ public class ByeHackerCommand implements CommandExecutor {
 				sender.sendMessage("§b§lByeHacker §7>> §aIP "+ip+" 没有被封禁");
 			}
 			return true;
-		}
+		}*/
 		case "reload": {
 			if (!sender.hasPermission("byehacker.manage")) {
 				sender.sendMessage("§b§lByeHacker §7>> §c你没有权限执行此命令");
@@ -174,7 +174,7 @@ public class ByeHackerCommand implements CommandExecutor {
 					                   " §a时间 §e"+DateUtils.formatDateWhitoutTime(banInfo.getCreated()));
 				}
 			}
-			sender.sendMessage("§b§lByeHacker §7>> §b已封禁 "+count+" 个作弊者及他们的IP");
+			sender.sendMessage("§b§lByeHacker §7>> §b已封禁 "+count+" 个作弊者");
 			return true;
 		}
 		default: {

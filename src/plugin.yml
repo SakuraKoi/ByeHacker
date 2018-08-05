@@ -1,6 +1,6 @@
 name: ByeHacker
 main: ldcr.ByeHacker.ByeHacker
-version: 4
+version: 5
 author: Ldcr
 softdepend: ["AuthMe"]
 depend: ["ProtocolLib", "LdcrUtils"]

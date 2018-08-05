@@ -1,7 +1,5 @@
 package ldcr.ByeHacker;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 
 import org.bukkit.BanList.Type;
@@ -17,7 +15,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 
-import ldcr.ByeHacker.Utils.BookUtils;
 import ldcr.ByeHacker.api.event.ByeHackerPassEvent;
 import ldcr.ByeHacker.auth.ByehackerAuth;
 import ldcr.ByeHacker.listeners.ActionListener;
@@ -25,7 +22,6 @@ import ldcr.ByeHacker.listeners.ChatPacketListener;
 import ldcr.ByeHacker.listeners.AuthListener.AuthmeListener;
 import ldcr.ByeHacker.listeners.AuthListener.BukkitListener;
 import ldcr.LdcrUtils.plugin.LdcrUtils;
-import ldcr.Utils.exception.ExceptionUtils;
 
 public class ByeHacker extends JavaPlugin implements Listener {
 	public static ByeHacker instance;
@@ -33,18 +29,10 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		instance = this;
-		LdcrUtils.requireVersion(32);
+		LdcrUtils.requireVersion(this, 33);
 		authingPlayers = new HashMap<>();
 		getCommand("byehacker").setExecutor(new ByeHackerCommand());
 		Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §e正在加载 ByeHacker作弊检测 v"+getDescription().getVersion());
-		try {
-			BookUtils.loadImpl();
-		} catch (final Exception e) {
-			ExceptionUtils.printStacktrace(e);
-			Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c错误: 构建 BookUtils 失败");
-			Bukkit.getPluginManager().disablePlugin(this);
-			return;
-		}
 		if (Bukkit.getPluginManager().isPluginEnabled("AuthMe")) {
 			Bukkit.getPluginManager().registerEvents(new AuthmeListener(), this);
 			Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §a发现Authme登录插件, 支持已启用.");
@@ -101,7 +89,8 @@ public class ByeHacker extends JavaPlugin implements Listener {
 	public void onLogin(final PlayerLoginEvent e) {
 		if (e.getResult()==Result.KICK_BANNED) {
 			if (e.getKickMessage().contains("ByeHacker-Detected")) {
-				e.setKickMessage(" java.net.ConnectException: Connection Refused: no further information; ");
+				//e.setKickMessage(" java.net.ConnectException: Connection Refused: no further information; ");
+				e.setKickMessage("§b§l作弊验证 §7>> §c永久封禁: 检测到作弊客户端");
 				Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c被封禁的玩家 "+e.getPlayer().getName()+" 试图进入服务器");
 			}
 		}
@@ -115,12 +104,12 @@ public class ByeHacker extends JavaPlugin implements Listener {
 
 	public void banHacker(final Player player) {
 		Bukkit.getConsoleSender().sendMessage("§b§l作弊验证 §7>> §c玩家 "+player.getName()+" 被检测到作弊客户端");
-		final Calendar c = new GregorianCalendar();
+		/*final Calendar c = new GregorianCalendar();
 		c.add(Calendar.DAY_OF_MONTH, 30);
 		Bukkit.getBanList(Type.IP).addBan(player.getAddress().getHostString(),
 		                                  "ByeHacker-Detected- "+
 		                                		  player.getAddress().getHostString()+" "+player.getName()
-		                                		  , c.getTime(), "ByeHacker-AutoDetect");
+		                                		  , c.getTime(), "ByeHacker-AutoDetect");*/
 		Bukkit.getBanList(Type.NAME).addBan(player.getName(),
 		                                    "ByeHacker-Detected- "+
 		                                    		player.getAddress().getHostString()+" "+player.getName()
